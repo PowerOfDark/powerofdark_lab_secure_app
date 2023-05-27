@@ -1,0 +1,23 @@
+name: "Run Mixeway (SAST)"
+
+on:
+  push:
+jobs:
+  mixeway-scan:
+    name: Mixeway scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Prepare Mixeway docker image
+        run: docker pull mixeway/scanner:latest
+      - name: Build app
+        run: mvn package
+      - name: Run scan
+        run: |
+          docker run -e OSS_USERNAME=${{ secrets.SONATYPE_EMAIL }} -e OSS_KEY=${{ secrets.SONATYPE_TOKEN }} \
+            -e MIXEWAY_URL=https://hub.mixeway.io -e MIXEWAY_KEY=${{ secrets.MIXEWAY_TOKEN }} \
+            -e MIXEWAY_PROJECT_ID=${{ secrets.MIXEWAY_PROJECT_ID }} -e MIXEWAY_PROJECT_NAME=${{ secrets.MIXEWAY_PROJECT_NAME }} \
+            -e MODE=STANDALONE -e COMMIT_ID=${{ github.sha }} -e BRANCH=${{ github.ref_name }} \
+            -v"$(pwd):/opt/sources" mixeway/scanner:latest
+          
+
